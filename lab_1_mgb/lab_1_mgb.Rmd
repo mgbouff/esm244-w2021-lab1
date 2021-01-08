@@ -100,3 +100,66 @@ sf_trees_sep <- sf_trees %>%
 
 ```
 
+Using tidyr::unite() to combine two columns
+```{r}
+
+id_status_unite <- sf_trees %>% 
+  unite("id_status", tree_id:legal_status, sep = "_COOL_")
+
+```
+
+### Part 2: MAPS!
+
+Converting to spatial coordinates using st_as_sf()
+```{r}
+
+# Converting lat/lon to spatial points
+blackwood_acacia_sp <- blackwood_acacia %>% 
+  drop_na(longitude, latitude) %>% 
+  st_as_sf(coords = c("longitude","latitude"))
+
+# Set CRS
+st_crs(blackwood_acacia_sp) = 4326
+
+# Plot in ggplot using geom_sf
+ggplot(data = blackwood_acacia_sp) +
+  geom_sf(color = "darkgreen") +
+  theme_minimal()
+
+# Read in basemap shapefile
+sf_map <- read_sf(here("data","sf_map","tl_2017_06075_roads.shp"))
+
+# Match CRS
+st_transform(sf_map, 4326)
+
+# Plot
+ggplot(data = sf_map) +
+  geom_sf()
+
+```
+
+Combine data with basemap
+```{r}
+
+ggplot() +
+  geom_sf(data = sf_map,
+          size = 0.1,
+          color = "darkgray") +
+  geom_sf(data = blackwood_acacia_sp, 
+          color = "red", 
+          size = 0.5) +
+  theme_void() +
+  labs(title = "Blackwood acacias in San Francisco")
+
+```
+
+### Interactive! 
+```{r}
+
+tmap_mode("view")
+
+tm_shape(blackwood_acacia_sp) + 
+  tm_dots()
+
+```
+## END Lab 1
