@@ -1,0 +1,102 @@
+---
+title: "Lab 1: Wrangling review, new functions, AND A MAP!"
+author: "Marie Bouffard"
+date: "1/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Attach packages
+
+library(tidyverse)
+library(here)
+library(sf)
+library(tmap)
+
+```
+
+Read in data
+```{r}
+#---------------------------------------
+# read in sf tree data
+#---------------------------------------
+
+sf_trees <- read_csv(here("data","sf_trees","sf_trees.csv"))
+
+#---------------------------------------
+# Exploratory functions
+#---------------------------------------
+
+# view(sf_trees)
+# summary(sf_trees)
+# names(sf_trees)
+
+```
+
+### Part 1: Wrangling & ggplot review
+```{r}
+
+#---------------------------------------
+# Find counts by legal status and wrangle
+#---------------------------------------
+
+# Using group_by %>% summarize %>% n
+sf_trees %>% 
+  group_by(legal_status) %>% 
+  summarize(tree_count = n())
+
+# Same thing + new dplyr functions
+top_5_status <- sf_trees %>% 
+  count(legal_status) %>% 
+  drop_na(legal_status) %>% 
+  rename(tree_count = n) %>% 
+  relocate(tree_count) %>% 
+  slice_max(tree_count, n = 5) %>% 
+  arrange(-tree_count)
+
+```
+
+Graph top 5
+```{r}
+
+ggplot(data = top_5_status, aes(x = fct_reorder(legal_status, tree_count), y = tree_count)) +
+  geom_col() +
+  labs(y = "Tree count", x = "Legal Status") +
+  coord_flip() +
+  theme_minimal() 
+
+```
+
+Filter for permitted and MTA
+```{r}
+
+permitted_mta <- sf_trees %>% 
+  filter(legal_status == "Permitted Site", caretaker == "MTA")
+
+```
+
+Filter for Blackwood Acacia trees trees and select for columns + Meet stringr
+```{r}
+
+# str_detect() is part of stringr package for working with strings and is useful for finding a specific string in a column
+
+blackwood_acacia <- sf_trees %>% 
+  filter(str_detect(species, "Blackwood Acacia")) %>% 
+  select(legal_status, date, latitude, longitude)
+
+# Graph locations
+ggplot(data = blackwood_acacia, aes(x = longitude, y = latitude)) + 
+  geom_point()
+
+```
+
+Use tidyr::separate() to separate the species column into two separate columns
+```{r}
+
+sf_trees_sep <- sf_trees %>% 
+  separate(species, into = c("spp_scientific", "spp_common"), sep = " :: ")
+
+```
+
